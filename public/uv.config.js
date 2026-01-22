@@ -1,6 +1,6 @@
 self.__uv$config = {
     prefix: '/uv/service/',
-   bare: 'https://bare.benroberts.dev/',
+ bare: 'https://v6.swst.io/bare/',
     encodeUrl: Ultraviolet.codec.xor.encode,
     decodeUrl: Ultraviolet.codec.xor.decode,
     handler: '/uv/uv.handler.js',
