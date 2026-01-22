@@ -13,18 +13,19 @@ app.get('/', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Google Drive - My Files</title>
+            <title>Google Drive</title>
             <link rel="icon" type="image/x-icon" href="https://ssl.gstatic.com/docs/doclist/images/infinite_arrow_favicon_5.ico">
         </head>
         <body style="background:#111;color:white;font-family:sans-serif;text-align:center;padding-top:100px;">
-            <h1 id="status">Adventure Proxy</h1>
-            <p id="subtext">Enter a URL to start browsing</p>
-            <input id="url" type="text" placeholder="discord.com" style="padding:10px;width:300px;border-radius:5px;">
-            <button id="launch-btn" style="padding:10px 20px;background:#00ff88;border:none;border-radius:5px;cursor:pointer;">Launch</button>
+            <h1>Adventure Proxy</h1>
+            <p>If the button doesn't work, use <b>Cloak Mode</b></p>
+            <input id="url" type="text" placeholder="google.com" style="padding:10px;width:300px;">
+            <br><br>
+            <button id="launch-btn" style="padding:10px 20px;background:#00ff88;border:none;border-radius:5px;cursor:pointer;">Normal Launch</button>
+            <button id="cloak-btn" style="padding:10px 20px;background:#555;color:white;border:none;border-radius:5px;cursor:pointer;">Cloak Mode (Hidden)</button>
 
             <script src="/uv/uv.bundle.js"></script>
             <script>
-                // Manual Config
                 window.__uv$config = {
                     prefix: '/uv/service/',
                     bare: '/bare/',
@@ -36,34 +37,35 @@ app.get('/', (req, res) => {
                     sw: '/uv/uv.sw.js',
                 };
 
-                const btn = document.getElementById('launch-btn');
-                const status = document.getElementById('status');
+                async function registerSW() {
+                    return await navigator.serviceWorker.register('/uv/uv.sw.js', {
+                        scope: window.__uv$config.prefix
+                    });
+                }
 
-                btn.onclick = async () => {
-                    let url = document.getElementById('url').value.trim();
-                    if (!url) return;
+                document.getElementById('launch-btn').onclick = async () => {
+                    let url = document.getElementById('url').value;
                     if (!url.startsWith('http')) url = 'https://' + url;
+                    await registerSW();
+                    window.location.href = window.__uv$config.prefix + btoa(url);
+                };
 
-                    status.innerText = "Loading Engine...";
-                    btn.disabled = true;
-
-                    try {
-                        // Register SW with a timestamp to bypass school cache
-                        const registration = await navigator.serviceWorker.register('/uv/uv.sw.js?v=' + Date.now(), {
-                            scope: window.__uv$config.prefix
-                        });
-
-                        if (registration.active || registration.installing || registration.waiting) {
-                            status.innerText = "Connecting...";
-                            window.location.href = window.__uv$config.prefix + btoa(url);
-                        } else {
-                            status.innerText = "Error: SW Failed to Start";
-                        }
-                    } catch (err) {
-                        status.innerText = "Blocked: " + err.name;
-                        document.getElementById('subtext').innerText = "Your school might be blocking Service Workers. Try a different browser or 'About:Blank' mode.";
-                        btn.disabled = false;
+                document.getElementById('cloak-btn').onclick = () => {
+                    const win = window.open();
+                    if (!win || win.closed) {
+                        alert('Pop-up blocked! Please allow pop-ups for this site.');
+                        return;
                     }
+                    const url = document.getElementById('url').value;
+                    const iframe = win.document.createElement('iframe');
+                    win.document.body.style.margin = '0';
+                    win.document.body.style.height = '100vh';
+                    iframe.style.border = 'none';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.src = window.location.href; // This opens the proxy inside the cloak
+                    win.document.body.appendChild(iframe);
+                    window.location.replace('https://classroom.google.com'); // Redirects this tab to look safe
                 };
             </script>
         </body>
