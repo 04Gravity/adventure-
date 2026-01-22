@@ -4,30 +4,32 @@ import { createBareServer } from '@tomphttp/bare-server-node';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { join } from 'node:path';
 
-const bare = createBareServer('/bare/');
 const app = express();
+const bare = createBareServer('/bare/');
 const __dirname = process.cwd();
 
-// 1. Serve Ultraviolet files (This fixes the "Raw Code" error)
+// 1. Force the Bare Server to handle its own requests first
+app.use((req, res, next) => {
+    if (bare.shouldRoute(req)) {
+        bare.route(req, res);
+    } else {
+        next();
+    }
+});
+
+// 2. Serve UV scripts from the official library path
 app.use('/uv/', express.static(uvPath));
 
-// 2. Serve your static frontend files
+// 3. Serve your UI from the public folder
 app.use(express.static(join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 
-const server = createServer();
+const server = createServer(app);
 
-server.on('request', (req, res) => {
-    if (bare.shouldRoute(req)) {
-        bare.route(req, res);
-    } else {
-        app(req, res);
-    }
-});
-
+// Handle WebSockets (Required for YouTube to load properly)
 server.on('upgrade', (req, socket, head) => {
     if (bare.shouldRoute(req)) {
         bare.routeUpgrade(req, socket, head);
@@ -36,6 +38,4 @@ server.on('upgrade', (req, socket, head) => {
     }
 });
 
-server.listen(process.env.PORT || 8080, () => {
-    console.log('Adventure Proxy is live on port 8080');
-});
+server.listen(process.env.PORT || 8080, '0.0.0.0');
